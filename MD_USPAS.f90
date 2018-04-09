@@ -17,6 +17,7 @@ program MDelectron
   real(8) :: dt=1.0, realt = 0.0
   integer :: plotstride = 10
   !experiment: lz = 0.4 um, rx = ry = 100.0 um with 10^6 electrons
+  !simulation: lz = 0.08 um, rx = ry = 20.0 um with 8000 electrons
   real(8), parameter :: L = 3.779E5  , Lz = 1511.8
   
   !using rest mass of electrondd
@@ -28,16 +29,15 @@ program MDelectron
   ! z_anode = 2cm to make 100keV electrons
   real(8), parameter :: z_anode_on = 1.89E8, z_anode_off = 3*z_anode_on
   real(8), parameter :: z_anode = 2*z_anode_on
-  !Relativistic effect (c in velocity unit)
   
-  real(8) :: R(3,N), V(3,N), F(3,N), rel(3)
-  real(8) :: r1, r2, r3,r4, PE, KE, rellength, s1,s2,s3
+  real(8) :: R(3,N), V(3,N), F(3,N)
   !R is for position of the atoms, V for velocity, F for Force
+  real(8) :: PE, KE
   !real(8) :: KEnergy(Ntime),PE,PE_0, Etot(Ntime), Eofel, Eofel_0
   !KEnergy = total Kinetic energy of atomic system
   !PE and PE_0 is the total Potential energy of atoms
   !Eofel is energy of electronic system
-  integer :: Time,i,j,k,numb,check
+  integer :: Time,i,j,k
    
   open(UNIT=13, file="RandV_3D_Uniform.xyz", status="replace")
    
@@ -46,7 +46,7 @@ program MDelectron
   V = 0.0
   F = 0.0
   
-  !Warm-up for the simulation
+  !-----Simulation-----
   do Time=1,Ntime
     call verlet_init(V,R,dt,N,F,m)
     realt = realt + dt
@@ -62,7 +62,7 @@ program MDelectron
     end if  
     !change time step size for better resolution
     if (Time == 100) then
-      dt = 1.0
+      dt = dt * 2.0
       print *, 'dt = ', dt
     endif
     if (Time == 200) then
@@ -144,7 +144,7 @@ contains
     real(8) :: REL(3), RELlength, Fij(3), dz_ee
     real(8) :: zforee !this create a register for R(3,i) to save time
     F=0.0
-    !$omp parallel do private(fij,rel,rellength)
+    !$omp parallel do private(fij,rel,Rellength)
     do j=1,N-1
       do i=j+1,N
         REL=R(:,i)-R(:,j)
