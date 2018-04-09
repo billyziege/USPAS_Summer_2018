@@ -1,0 +1,16 @@
+# compiled files:
+*.o
+*.out
+*.10
+
+# output files:
+*.xyz
+*.dat
+
+# executables:
+
+
+# directories to ignore:
+
+# other files
+*.sub
