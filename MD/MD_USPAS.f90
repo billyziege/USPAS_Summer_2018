@@ -13,9 +13,9 @@ program MDelectron
   real(8), parameter :: m = 5.4858E-4
   
   real(8), parameter :: cutoff2 = 400.0 !proximity limit
-  integer, parameter :: N=8000, Ntime=100
+  integer, parameter :: N=8000, Ntime=10
   real(8) :: dt=1.0, realt = 0.0
-  integer :: plotstride = 10
+  integer :: plotstride = 2
   !experiment: lz = 0.4 um, rx = ry = 100.0 um with 10^6 electrons
   !simulation: lz = 0.08 um, rx = ry = 20.0 um with 8000 electrons
   real(8), parameter :: L = 3.779E5  , Lz = 1511.8
@@ -39,10 +39,12 @@ program MDelectron
   !Eofel is energy of electronic system
   integer :: Time,i,j,k
    
-  open(UNIT=13, file="RandV_3D_Uniform.xyz", status="replace")
+!  open(UNIT=13, file="RandV_3D_Uniform.xyz", status="replace")
+  open(UNIT=13, file="RandV_3D_Gaussian.xyz", status="replace")
    
   !-----Initialization-----
-  call init_R_Uniform(R,N)
+!  call init_R_Uniform(R,N)
+  call init_R_Gaussian(R,N)
   V = 0.0
   F = 0.0
   
@@ -121,6 +123,38 @@ contains
       endif
     enddo
   end subroutine Init_R_Uniform
+
+  subroutine Init_R_Gaussian(R,N)
+    real(8), intent(inout) :: R(:,:)
+    integer, intent(in) :: N
+    integer :: numb,check,i
+    real(8) :: r1,r2,r3,r4,s1,s2,s3,rel(3)
+    call random_seed()
+    numb = 0
+    do while (numb < N)
+      call random_number(r1)
+      call random_number(r2)
+      call random_number(r3)
+      call random_number(r4)
+      !Box-Muller for Gaussian distribution
+      s1 = L*sqrt(-2*log(r1))*cos(2*pi*r2)
+      s2 = L*sqrt(-2*log(r1))*sin(2*pi*r2)
+      s3 = Lz*sqrt(-2*log(r3))*sin(2*pi*r4)
+      !check for proximity
+      check = 0
+      do i = 1, numb
+        rel = R(:,i) - (/s1,s2,s3/)
+        if (sum(rel**2) < cutoff2 ) then
+          check = 1
+          exit
+        endif
+      enddo
+      if (check == 0) then
+        numb = numb + 1
+        R(:,numb) = (/s1,s2,s3/)
+      endif
+    enddo
+  end subroutine Init_R_Gaussian
 
   subroutine verlet_init(V,R, dt, N, F, m)
     real(8), intent(inout) :: V(:,:), R(:,:), F(:,:)
