@@ -30,8 +30,8 @@ program MDelectron
   real(8), parameter :: z_anode_on = 1.89E8, z_anode_off = 3*z_anode_on
   real(8), parameter :: z_anode = 2*z_anode_on
   
-  real(8) :: R(3,N), V(3,N), F(3,N)
-  !R is for position of the atoms, V for velocity, F for Force
+  real(8) :: R(3,N), P(3,N), F(3,N)
+  !R is for position of the atoms, P = gamma*m*v Momentum, F for Force
   real(8) :: PE, KE
   !real(8) :: KEnergy(Ntime),PE,PE_0, Etot(Ntime), Eofel, Eofel_0
   !KEnergy = total Kinetic energy of atomic system
@@ -39,27 +39,27 @@ program MDelectron
   !Eofel is energy of electronic system
   integer :: Time,i,j,k
    
-!  open(UNIT=13, file="RandV_3D_Uniform.xyz", status="replace")
-  open(UNIT=13, file="RandV_3D_Gaussian.xyz", status="replace")
+!  open(UNIT=13, file="RandP_3D_Uniform.xyz", status="replace")
+  open(UNIT=13, file="RandP_3D_Gaussian.xyz", status="replace")
    
   !-----Initialization-----
 !  call init_R_Uniform(R,N)
   call init_R_Gaussian(R,N)
-  V = 0.0
+  P = 0.0
   F = 0.0
   
   !-----Simulation-----
   do Time=1,Ntime
-    call verlet_init(V,R,dt,N,F,m)
+    call verlet_init(P,R,dt,N,F,m)
     realt = realt + dt
     if (modulo(Time,plotstride) == 1) then
       call getPE(R,N,PE)
-      KE = 0.5*m*sum(V**2)
+      KE = sum(P**2)/(2.0*m)
       write(*,'(4F15.5)') realt, PE, KE, PE+KE
       write(13,'(i5)') N
       write(13,'(F15.5)') realt
       do i =1, N
-        write(13,'(i5,3F15.3,3F15.7)') 1,R(:,i),V(:,i)
+        write(13,'(i5,3F15.3,3F15.7)') 1,R(:,i),P(:,i)
       end do
     end if  
     !change time step size for better resolution
@@ -156,17 +156,17 @@ contains
     enddo
   end subroutine Init_R_Gaussian
 
-  subroutine verlet_init(V,R, dt, N, F, m)
-    real(8), intent(inout) :: V(:,:), R(:,:), F(:,:)
+  subroutine verlet_init(P,R, dt, N, F, m)
+    real(8), intent(inout) :: P(:,:), R(:,:), F(:,:)
     real(8), intent(in) :: dt, m
     integer , intent(in) :: N
-    real(8) :: dttt,hdtttm
-    dttt = dt*tt
-    hdtttm = 0.5*dt*tt/m
-      V=V+F*hdtttm
-      R=R+V*dttt
+    real(8) :: dtttm,hdttt
+    dtttm = dt*tt/m
+    hdttt = 0.5*dt*tt
+      P=P+F*hdttt
+      R=R+P*dtttm
       call Force(F,R,N)
-      V=V+F*hdtttm
+      P=P+F*hdttt
   end subroutine verlet_init
  
   !Force Calculation
